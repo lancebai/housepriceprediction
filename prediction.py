@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import pandas as pd
 import numpy as np
 
@@ -739,18 +741,18 @@ def main():
 
 	# predictor_forest.evaluate_model()
 
-	# predictorxgb = predictor_dummy.clone(HousePriceXGB)
-	# predictorxgb.train()
-	# predictorxgb.evaluate_model()
-	# predictorxgb.plot_regression()
+	predictorxgb = predictor_dummy.clone(HousePriceXGB)
+	predictorxgb.train()
+	predictorxgb.evaluate_model()
+	predictorxgb.plot_regression()
 
-	# predictoradaboost = predictor_dummy.clone(HousePriceAdaBoost)
-	# predictoradaboost.train()
-	# predictoradaboost.evaluate_model()
+	predictoradaboost = predictor_dummy.clone(HousePriceAdaBoost)
+	predictoradaboost.train()
+	predictoradaboost.evaluate_model()
 
-	# predictorstacking = predictor_dummy.clone(HousePriceStackingRgressor)
-	# predictorstacking.train()
-	# predictorstacking.evaluate_model()
+	predictorstacking = predictor_dummy.clone(HousePriceStackingRgressor)
+	predictorstacking.train()
+	predictorstacking.evaluate_model()
 
 if __name__ == "__main__":
 	main()
