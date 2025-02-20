@@ -26,7 +26,10 @@ def run_house_price_models():
         "StackingRegressor",
         "Lasso",
         "LassoXGBoost",
-        "ForestLassoXGB"
+        "ForestLassoXGB",
+        "NearestNeighbor",
+        "SVM",
+        "Meta"
     ]
 
     # Create, train, and evaluate each model using the factory

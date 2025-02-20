@@ -2,12 +2,15 @@
 
 import pandas as pd
 import numpy as np
+import sys
 
 from sklearn.compose import ColumnTransformer
 # from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LinearRegression
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.svm import SVR
 # from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import Lasso
 from sklearn.metrics import accuracy_score, log_loss
@@ -513,6 +516,70 @@ class HousePriceAdaBoost(HousePriceModel):
 		"""Fit the model to training data."""
 		# print(self.model)
 
+class HousePriceKNN(HousePriceModel):
+    def get_name(self):
+        return "KNeighborsRegressor"
+
+    def train(self):
+        # Define KNN regressor model
+        self.model = KNeighborsRegressor(n_neighbors=5)
+        # Train the model on the training data
+        self.model.fit(self.x_train, self.y_train)
+
+class HousePriceSVM(HousePriceModel):
+    def get_name(self):
+        return "SVR"
+
+    def train(self):
+        # Create the SVM Regressor model with a radial basis function (RBF) kernel
+        self.model = SVR(kernel='rbf', C=100, gamma=0.1, epsilon=0.1)
+        # Train the model on the training data
+        self.model.fit(self.x_train, self.y_train)
+
+class HousePriceMetaXGB(HousePriceModel):
+	def get_name(self):
+		return "Meta"
+
+	def train(self):
+
+		forest = self.clone(HousePriceRandomForest)
+		forest.train()
+		forest_preds_train = forest.model.predict(self.x_train)
+
+		lasso = self.clone(HousePriceLasso)
+		lasso.train()
+		lasso_preds_train = lasso.model.predict(self.x_train)
+
+		linear = self.clone(HousePriceLinear)
+		linear.train()
+		linear_preds_train = linear.model.predict(self.x_train)
+
+		neighbor = self.clone(HousePriceKNN)
+		neighbor.train()
+		neighbor_preds_train = neighbor.model.predict(self.x_train)
+		
+		adaboost = self.clone(HousePriceAdaBoost)
+		adaboost.train()
+		adaboost_preds_train = adaboost.model.predict(self.x_train)
+		
+		stacking = self.clone(HousePriceStackingRgressor)
+		stacking.train()
+		stacking_preds_train = stacking.model.predict(self.x_train)
+
+
+		self.x_train = np.column_stack((forest_preds_train, lasso_preds_train, linear_preds_train, neighbor_preds_train, adaboost_preds_train, stacking_preds_train))
+		self.model = XGBRegressor(n_estimators=1000, learning_rate=0.05).fit(self.x_train, self.y_train)
+
+		forest_preds_test = forest.model.predict(self.x_test)
+		lasso_preds_test = lasso.model.predict(self.x_test)
+		linear_preds_test = linear.model.predict(self.x_test)
+		neighbor_preds_test = neighbor.model.predict(self.x_test)
+		adaboost_preds_test = adaboost.model.predict(self.x_test)
+		stacking_preds_test = stacking.model.predict(self.x_test)
+		
+		self.x_test = np.column_stack((forest_preds_test, lasso_preds_test, linear_preds_test, neighbor_preds_test, adaboost_preds_test, stacking_preds_test))
+
+
 
 class HousePriceStackingRgressor(HousePriceModel):
 	def get_name(self):
@@ -648,7 +715,10 @@ class HousePriceModelFactory:
 			"StackingRegressor": HousePriceStackingRgressor,
 			"Lasso": HousePriceLasso,
 			"LassoXGBoost": HousePriceLassoXGB,
-			"ForestLassoXGB":HousePriceForestLassoXGB
+			"ForestLassoXGB":HousePriceForestLassoXGB,
+			"NearestNeighbor":HousePriceKNN,
+			"SVM":HousePriceSVM,
+			"Meta":HousePriceMetaXGB
 		}
 
 		if model_type not in model_map:
@@ -693,9 +763,10 @@ def main():
 	predictor_dummy = HousePriceDummy(config)
 	predictor_dummy.load_data(split = True)
 
-	predictor = predictor_dummy.clone(HousePriceLassoXGB)
+	predictor = predictor_dummy.clone(HousePriceMeta)
 	predictor.train()
-	predictor.predict_final_test()
+	predictor.evaluate_model(output_to_stdout=True)
+	# predictor.predict_final_test()
 
 	#####  plot important features
 	# predictor_forest = predictor_dummy.clone(HousePriceRandomForest)
@@ -741,18 +812,18 @@ def main():
 
 	# predictor_forest.evaluate_model()
 
-	predictorxgb = predictor_dummy.clone(HousePriceXGB)
-	predictorxgb.train()
-	predictorxgb.evaluate_model()
-	predictorxgb.plot_regression()
+	# predictorxgb = predictor_dummy.clone(HousePriceXGB)
+	# predictorxgb.train()
+	# predictorxgb.evaluate_model()
+	# predictorxgb.plot_regression()
 
-	predictoradaboost = predictor_dummy.clone(HousePriceAdaBoost)
-	predictoradaboost.train()
-	predictoradaboost.evaluate_model()
+	# predictoradaboost = predictor_dummy.clone(HousePriceAdaBoost)
+	# predictoradaboost.train()
+	# predictoradaboost.evaluate_model()
 
-	predictorstacking = predictor_dummy.clone(HousePriceStackingRgressor)
-	predictorstacking.train()
-	predictorstacking.evaluate_model()
+	# predictorstacking = predictor_dummy.clone(HousePriceStackingRgressor)
+	# predictorstacking.train()
+	# predictorstacking.evaluate_model()
 
 if __name__ == "__main__":
 	main()
